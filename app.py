@@ -42,26 +42,7 @@ def get_client(key):
 
 client = get_client(api_key)
 
-# 利用可能なモデルを自動選択
-@st.cache_resource
-def get_model_name(_client):
-    preferred = [
-        "gemini-3-flash-preview",
-        "gemini-3-flash",
-        "gemini-3.1-pro",
-        "gemini-2.5-pro",
-        "gemini-2.5-flash",
-    ]
-    try:
-        available = {m.name.replace("models/", "") for m in _client.models.list()}
-        for m in preferred:
-            if m in available:
-                return m
-    except Exception:
-        pass
-    return preferred[0]
-
-model_name = get_model_name(client)
+MODEL = "gemini-3-flash-preview"
 
 # システムプロンプト読み込み
 @st.cache_resource
@@ -74,7 +55,7 @@ system_prompt = load_system_prompt()
 # セッション状態の初期化
 if "chat" not in st.session_state:
     st.session_state.chat = client.chats.create(
-        model=model_name,
+        model=MODEL,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
         ),
