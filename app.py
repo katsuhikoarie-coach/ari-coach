@@ -43,7 +43,7 @@ def get_client(key):
 client = get_client(api_key)
 
 MODEL = "gemini-3-flash-preview"
-TOKEN_LIMIT = 5000
+TOKEN_LIMIT = 20000
 
 # システムプロンプト読み込み
 @st.cache_resource
