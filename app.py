@@ -46,11 +46,11 @@ client = get_client(api_key)
 @st.cache_resource
 def get_model_name(_client):
     preferred = [
+        "gemini-3-flash",
         "gemini-3-flash-preview",
+        "gemini-3.1-pro",
         "gemini-2.5-pro",
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
     ]
     try:
         available = {m.name.replace("models/", "") for m in _client.models.list()}
