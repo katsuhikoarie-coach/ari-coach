@@ -43,6 +43,7 @@ def get_client(key):
 client = get_client(api_key)
 
 MODEL = "gemini-3-flash-preview"
+TOKEN_LIMIT = 5000
 
 # システムプロンプト読み込み
 @st.cache_resource
@@ -61,32 +62,57 @@ if "chat" not in st.session_state:
         ),
     )
     st.session_state.messages = []
+    st.session_state.total_tokens = 0
     with st.spinner("Ariが準備中..."):
         opening = st.session_state.chat.send_message(
             "セッションを開始してください。Phase 0の最初の一問だけを置いてください。"
         )
+        try:
+            st.session_state.total_tokens += opening.usage_metadata.total_token_count
+        except Exception:
+            pass
         st.session_state.messages.append({
             "role": "assistant",
             "content": opening.text
         })
+
+session_ended = st.session_state.total_tokens >= TOKEN_LIMIT
 
 # 会話履歴の表示
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# ユーザー入力
-if user_input := st.chat_input("ここに入力してください..."):
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
+# セッション終了済みの場合は終了メッセージを表示
+if session_ended:
     with st.chat_message("assistant"):
-        with st.spinner(""):
-            response = st.session_state.chat.send_message(user_input)
-            reply = response.text
-        st.markdown(reply)
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.markdown("本日のセッションはここまでです。またお会いしましょう🌸")
+    st.chat_input("ここに入力してください...", disabled=True)
+else:
+    # ユーザー入力
+    if user_input := st.chat_input("ここに入力してください..."):
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        with st.chat_message("assistant"):
+            with st.spinner(""):
+                response = st.session_state.chat.send_message(user_input)
+                reply = response.text
+                try:
+                    st.session_state.total_tokens += response.usage_metadata.total_token_count
+                except Exception:
+                    pass
+            st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+        # トークン上限に達したら終了メッセージを追加して再描画
+        if st.session_state.total_tokens >= TOKEN_LIMIT:
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": "本日のセッションはここまでです。またお会いしましょう🌸"
+            })
+            st.rerun()
 
 # サイドバー：リセットボタン
 with st.sidebar:
@@ -94,6 +120,7 @@ with st.sidebar:
     if st.button("🔄 新しいセッションを開始", use_container_width=True):
         del st.session_state["chat"]
         del st.session_state["messages"]
+        del st.session_state["total_tokens"]
         st.rerun()
     st.markdown("---")
     st.markdown("**ari-coach** は、アドラー心理学・CBT・ACT・IFSなど13の心理・コーチング手法を統合したAIコーチです。")
