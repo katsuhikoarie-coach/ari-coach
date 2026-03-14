@@ -83,40 +83,37 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# セッション終了済みの場合は終了メッセージを表示
+# ユーザー入力（終了済みなら無効化）
 if session_ended:
-    with st.chat_message("assistant"):
-        st.markdown("本日のセッションはここまでです。またお会いしましょう🌸")
     st.chat_input("ここに入力してください...", disabled=True)
-else:
-    # ユーザー入力
-    if user_input := st.chat_input("ここに入力してください..."):
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
+elif user_input := st.chat_input("ここに入力してください..."):
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
 
-        with st.chat_message("assistant"):
-            with st.spinner(""):
-                response = st.session_state.chat.send_message(user_input)
-                reply = response.text
-                try:
-                    st.session_state.total_tokens += response.usage_metadata.total_token_count
-                except Exception:
-                    pass
-            st.markdown(reply)
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+    with st.chat_message("assistant"):
+        with st.spinner(""):
+            response = st.session_state.chat.send_message(user_input)
+            reply = response.text
+            try:
+                st.session_state.total_tokens += response.usage_metadata.total_token_count
+            except Exception:
+                pass
+        st.markdown(reply)
+    st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        # トークン上限に達したら終了メッセージを追加して再描画
-        if st.session_state.total_tokens >= TOKEN_LIMIT:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "本日のセッションはここまでです。またお会いしましょう🌸"
-            })
-            st.rerun()
+    # トークン上限に達したら終了メッセージを追加して再描画
+    if st.session_state.total_tokens >= TOKEN_LIMIT:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "本日のセッションはここまでです。またお会いしましょう🌸"
+        })
+        st.rerun()
 
 # サイドバー：リセットボタン
 with st.sidebar:
     st.markdown("### セッション管理")
+    st.markdown(f"🔢 使用トークン：{st.session_state.get('total_tokens', 0)} / {TOKEN_LIMIT}")
     if st.button("🔄 新しいセッションを開始", use_container_width=True):
         del st.session_state["chat"]
         del st.session_state["messages"]
