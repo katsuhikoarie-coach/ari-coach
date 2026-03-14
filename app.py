@@ -53,7 +53,7 @@ system_prompt = load_system_prompt()
 # セッション状態の初期化
 if "chat" not in st.session_state:
     st.session_state.chat = client.chats.create(
-        model="gemini-2.0-flash",
+        model="gemini-2.0-flash-lite",
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
         ),
