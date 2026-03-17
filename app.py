@@ -69,7 +69,7 @@ if "chat" not in st.session_state:
             "セッションを開始してください。Phase 0の最初の一問だけを置いてください。"
         )
         try:
-            st.session_state.total_tokens += opening.usage_metadata.total_token_count
+            st.session_state.total_tokens = opening.usage_metadata.total_token_count
         except Exception:
             pass
         st.session_state.messages.append({
@@ -138,7 +138,7 @@ elif user_input := st.chat_input("ここに入力してください..."):
             response = st.session_state.chat.send_message(user_input)
             reply = response.text
             try:
-                st.session_state.total_tokens += response.usage_metadata.total_token_count
+                st.session_state.total_tokens = response.usage_metadata.total_token_count
             except Exception:
                 pass
         st.markdown(reply)
