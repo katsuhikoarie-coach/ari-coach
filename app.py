@@ -46,7 +46,6 @@ MODEL = "gemini-3-flash-preview"
 TOKEN_LIMIT = 100000
 
 # システムプロンプト読み込み
-@st.cache_resource
 def load_system_prompt():
     prompt_path = Path(__file__).parent / "最強セルフコーチング_プロンプト_3.0.md"
     return prompt_path.read_text(encoding="utf-8")
