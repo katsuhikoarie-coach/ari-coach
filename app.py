@@ -63,6 +63,7 @@ if "chat" not in st.session_state:
     )
     st.session_state.messages = []
     st.session_state.total_tokens = 0
+    st.session_state.summary = None
     with st.spinner("Ariが準備中..."):
         opening = st.session_state.chat.send_message(
             "セッションを開始してください。Phase 0の最初の一問だけを置いてください。"
@@ -86,6 +87,47 @@ for msg in st.session_state.messages:
 # ユーザー入力（終了済みなら無効化）
 if session_ended:
     st.chat_input("ここに入力してください...", disabled=True)
+
+    # セッション終了後のボタン
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 新しいセッションを始める", use_container_width=True):
+            for key in ["chat", "messages", "total_tokens", "summary"]:
+                st.session_state.pop(key, None)
+            st.rerun()
+    with col2:
+        if st.button("📋 サマリーを見る", use_container_width=True):
+            if not st.session_state.get("summary"):
+                history_text = "\n".join(
+                    f"{'Ari' if m['role'] == 'assistant' else 'ユーザー'}：{m['content']}"
+                    for m in st.session_state.messages
+                )
+                summary_prompt = f"""以下のコーチングセッションの会話を要約してください。
+
+会話内容：
+{history_text}
+
+以下の形式で出力してください：
+📋 本日のセッションサマリー
+・今日のテーマ：
+・見えてきた本音：
+・主な障害：
+・コミットメント（行動）：
+・発見したリソース（強み）："""
+                with st.spinner("サマリーを作成中..."):
+                    summary_client = genai.Client(api_key=api_key)
+                    resp = summary_client.models.generate_content(
+                        model=MODEL,
+                        contents=summary_prompt,
+                    )
+                    st.session_state.summary = resp.text
+                st.rerun()
+
+    # サマリー表示
+    if st.session_state.get("summary"):
+        st.markdown("---")
+        st.markdown(st.session_state.summary)
+
 elif user_input := st.chat_input("ここに入力してください..."):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
@@ -110,14 +152,19 @@ elif user_input := st.chat_input("ここに入力してください..."):
         })
         st.rerun()
 
-# サイドバー：リセットボタン
+# サイドバー
 with st.sidebar:
     st.markdown("### セッション管理")
-    st.markdown(f"🔢 使用トークン：{st.session_state.get('total_tokens', 0)} / {TOKEN_LIMIT}")
+    st.markdown(f"🔢 使用トークン：{st.session_state.get('total_tokens', 0):,} / {TOKEN_LIMIT:,}")
     if st.button("🔄 新しいセッションを開始", use_container_width=True):
-        del st.session_state["chat"]
-        del st.session_state["messages"]
-        del st.session_state["total_tokens"]
+        for key in ["chat", "messages", "total_tokens", "summary"]:
+            st.session_state.pop(key, None)
         st.rerun()
     st.markdown("---")
     st.markdown("**ari-coach** は、アドラー心理学・CBT・ACT・IFSなど13の心理・コーチング手法を統合したAIコーチです。")
+    st.markdown("---")
+    st.markdown("""🔒 **プライバシーについて**
+- このアプリは会話内容を保存しません
+- セッションはブラウザを閉じると完全に消えます
+- Google AIの技術を経由しています（Googleのプライバシーポリシーが適用されます）
+- 機密性の高い内容のご利用は、その点をご承知おきください""")
