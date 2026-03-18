@@ -28,7 +28,7 @@ try:
 except Exception:
     import os
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(__file__).parent / ".env")
     api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
@@ -63,18 +63,10 @@ if "chat" not in st.session_state:
     st.session_state.messages = []
     st.session_state.total_tokens = 0
     st.session_state.summary = None
-    with st.spinner("Ariが準備中..."):
-        opening = st.session_state.chat.send_message(
-            "セッションを開始してください。Phase 0の最初の一問だけを置いてください。"
-        )
-        try:
-            st.session_state.total_tokens = opening.usage_metadata.total_token_count
-        except Exception:
-            pass
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": opening.text
-        })
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": "今日話したいことは何ですか？"
+    })
 
 session_ended = st.session_state.total_tokens >= TOKEN_LIMIT
 
