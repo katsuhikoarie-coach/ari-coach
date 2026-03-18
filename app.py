@@ -52,6 +52,30 @@ def load_system_prompt():
 
 system_prompt = load_system_prompt()
 
+def compress_history(messages, client, model):
+    """古いメッセージを要約して圧縮する"""
+    if len(messages) < 40:
+        return messages
+
+    old_messages = messages[:20]
+    recent_messages = messages[20:]
+
+    history_text = "\n".join(
+        f"{'Ari' if m['role'] == 'assistant' else 'ユーザー'}：{m['content']}"
+        for m in old_messages
+    )
+
+    summary_prompt = f"""以下のコーチングセッションの会話を3〜5行で要約してください。
+テーマ・感情・出てきたキーワードだけを残してください。
+{history_text}
+"""
+    resp = client.models.generate_content(model=model, contents=summary_prompt)
+    summary_message = {
+        "role": "assistant",
+        "content": f"【以前の会話の要約】\n{resp.text}"
+    }
+    return [summary_message] + recent_messages
+
 # セッション状態の初期化
 if "chat" not in st.session_state:
     st.session_state.chat = client.chats.create(
@@ -120,6 +144,7 @@ if session_ended:
         st.markdown(st.session_state.summary)
 
 elif user_input := st.chat_input("ここに入力してください..."):
+    st.session_state.messages = compress_history(st.session_state.messages, client, MODEL)
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
